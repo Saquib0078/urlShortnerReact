@@ -74,20 +74,22 @@ let Shorturl = async (req, res) => {
 
 let Geturl = async (req, res) => {
   try {
-    const code = req.params.urlCode
+   //getting the data from cache if present
+   let getLongUrl = await GET_ASYNC(`${req.params.urlCode}`)
 
-    //find urlCode
-    const url = await UrlModel.findOne({ urlCode: code });
-    
+   //converting from string to JSON
+   let url = JSON.parse(getLongUrl);
+   if(url){
+     //redirecting to the original url
+     return res.status(302).redirect(url.longUrl);
+   }else{
+     let getUrl = await UrlModel.findOne({ urlCode: req.params.urlCode })
+     if(!getUrl) return res.status(404).send({ status: false, message: 'Url-code not found' });
 
-    if (!url) {
-      return res.status(404).send({ message: "No url found" });
-    }
-    // return res.send(url)
 
-    console.log("Long url found for short url. Redirecting...");
-    return res.status(302).redirect(url.longUrl);
-
+     //redirecting to the original url
+     return res.status(302).redirect(getUrl.longUrl)
+   }
   } catch (error) {
     return res.status(500).send({ status: false, message: error.message })
   }
